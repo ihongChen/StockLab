@@ -51,40 +51,21 @@
 |保險 |3/31|4/30|8/31|10/31|
 
 
-### 抄抄網站
+_____
+## NOTE
 
-每月營收:
-上市公司
-公開資訊觀測站>彙總報表>每月營業收入統計彙總表>上市公司>98年9月
+* 每月營收:
+    
+    [上市公司]((http://mops.twse.com.tw/t21/sii/t21sc03_98_9.html))
 
-http://mops.twse.com.tw/t21/sii/t21sc03_98_9.html
+    >公開資訊觀測站>彙總報表>每月營業收入統計彙總表>上市公司>98年9月
 
-上櫃公司
-公開資訊觀測站>彙總報表>每月營業收入統計彙總表>上櫃公司>98年9月
-http://mops.twse.com.tw/t21/otc/t21sc03_98_9.html
 
-每季財報主要要知道上市上櫃公 司之每股稅後盈餘(EPS)、每股淨值、毛利率、資產、負債、稅後純益率
 
-上市公司之每股稅後盈餘
-公開資訊觀測站>彙總報表>簡明損益季節查詢彙總表>上市公司98年第三季
-http://mops.twse.com.tw/server-java/t51sb08?colorchg=1&step=1&off=1&ys=9803&TYPEK=sii&
+    [上櫃公司](http://mops.twse.com.tw/t21/otc/t21sc03_98_9.html)
+    >公開資訊觀測站>彙總報表>每月營業收入統計彙總表>上櫃公司>98年9月
 
-上櫃公司之每股稅後盈餘
-公開資訊觀測站>彙總報表>簡明損益季節查詢彙總表>上櫃公司98年第三季
-http://mops.twse.com.tw/server-java/t51sb08?colorchg=1&step=1&off=1&ys=9803&TYPEK=otc&
+* 每季財報: 
 
-上市公司之每股淨值
-公開資訊觀測站>彙總報表>簡明資產負債季節查詢彙總表>上市公司98年第三季
+    每季財報主要要知道上市上櫃公 司之每股稅後盈餘(EPS)、每股淨值、毛利率、資產、負債、稅後純益率
 
-http://mops.twse.com.tw/server-java/t51sb07?colorchg=1&step=1&off=1&ys=9803&TYPEK=otc&
-
-上市公司之每股淨值
-公開資訊觀測站>彙總報表>簡明資產負債季節查詢彙總表>上市公司98年第三季
-
-http://mops.twse.com.tw/server-java/t51sb07?colorchg=1&step=1&off=1&ys=9803&TYPEK=sii&
-
-上市公司之毛利率、稅後純益率
-公開資訊觀測站>彙總報表>簡明損益季節查詢彙總表>上市公司98年第三季
-http://mops.twse.com.tw/server-java/t51sb06?colorchg=1&step=1&off=1&ys=9803&TYPEK=sii&
-
-資料來源:主力操盤選股系統 www.full888.com.tw 
