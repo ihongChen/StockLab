@@ -3,6 +3,7 @@
 - 參考資源
     - [如何看懂財務報表內的秘密](http://libsvr.sfi.org.tw/download/knowledge/102%E6%8A%95%E8%B3%87%E6%9C%AA%E4%BE%86/1020501(%E8%87%BA%E5%8C%97%E4%BF%A1%E7%BE%A9%E7%A4%BE%E5%A4%A7)-%E6%A2%81%E4%BA%A6%E9%B4%BB%E5%89%AF%E7%B8%BD.pdf)
     - [財務報表是企業成績單](http://applearea.pixnet.net/blog/post/25710264-%E8%B2%A1%E5%8B%99%E5%A0%B1%E8%A1%A8%E7%9A%84%E7%A0%94%E8%AE%80%E6%96%B9%E6%B3%95%E6%95%99%E5%AD%B8)
+    - [認識資產負債與綜合損益表](http://www.bestwise.com.tw/_trial_files/52WAS03203/ch02.pdf)
 
 # 綜合損益表
 # 資產負債表
@@ -29,7 +30,8 @@
 - 來源: `營益分析彙總表`
 - 欄位: `毛利率(%)(營業毛利)/(營業收入)`
 
-
+## 股價淨值比
+- 
 
 
 # 公布日期
@@ -47,3 +49,42 @@
 |銀行/票券/證券 |3/31|5/15|8/14|11/14|
 |金控 |3/31|5/30|8/31|11/29|
 |保險 |3/31|4/30|8/31|10/31|
+
+
+### 抄抄網站
+
+每月營收:
+上市公司
+公開資訊觀測站>彙總報表>每月營業收入統計彙總表>上市公司>98年9月
+
+http://mops.twse.com.tw/t21/sii/t21sc03_98_9.html
+
+上櫃公司
+公開資訊觀測站>彙總報表>每月營業收入統計彙總表>上櫃公司>98年9月
+http://mops.twse.com.tw/t21/otc/t21sc03_98_9.html
+
+每季財報主要要知道上市上櫃公 司之每股稅後盈餘(EPS)、每股淨值、毛利率、資產、負債、稅後純益率
+
+上市公司之每股稅後盈餘
+公開資訊觀測站>彙總報表>簡明損益季節查詢彙總表>上市公司98年第三季
+http://mops.twse.com.tw/server-java/t51sb08?colorchg=1&step=1&off=1&ys=9803&TYPEK=sii&
+
+上櫃公司之每股稅後盈餘
+公開資訊觀測站>彙總報表>簡明損益季節查詢彙總表>上櫃公司98年第三季
+http://mops.twse.com.tw/server-java/t51sb08?colorchg=1&step=1&off=1&ys=9803&TYPEK=otc&
+
+上市公司之每股淨值
+公開資訊觀測站>彙總報表>簡明資產負債季節查詢彙總表>上市公司98年第三季
+
+http://mops.twse.com.tw/server-java/t51sb07?colorchg=1&step=1&off=1&ys=9803&TYPEK=otc&
+
+上市公司之每股淨值
+公開資訊觀測站>彙總報表>簡明資產負債季節查詢彙總表>上市公司98年第三季
+
+http://mops.twse.com.tw/server-java/t51sb07?colorchg=1&step=1&off=1&ys=9803&TYPEK=sii&
+
+上市公司之毛利率、稅後純益率
+公開資訊觀測站>彙總報表>簡明損益季節查詢彙總表>上市公司98年第三季
+http://mops.twse.com.tw/server-java/t51sb06?colorchg=1&step=1&off=1&ys=9803&TYPEK=sii&
+
+資料來源:主力操盤選股系統 www.full888.com.tw 
