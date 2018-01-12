@@ -2,8 +2,11 @@
 from collections import namedtuple
 from collections import OrderedDict
 import pandas as pd 
+import numpy as np 
 from abc import ABCMeta, abstractmethod
-
+import pypyodbc, sqlite3
+import logging
+import itertools
 class StockTradeDays:
     def __init__(self, price_array, start_date, date_array = None):
         ## private price array
@@ -96,7 +99,8 @@ class StockTradeDays:
     
     def __len__(self):
         return len(self.stock_dict)
-    
+
+
 class TradeStrategyBase(metaclass=ABCMeta):
     """
     交易策略的抽象類別
@@ -126,6 +130,7 @@ class TradeStrategy1(TradeStrategyBase):
             trade_day.change > self.__buy_change_threshold :
                 ## 如果上漲超過幅度，並且沒有持有則買入
                 self.keep_stock_day += 1
+                logging.info('buy at {}'.format(trade_day.date))
         elif self.keep_stock_day > 0:
             ## 持有股票,持有股票時間遞增
             self.keep_stock_day +=1
@@ -135,6 +140,7 @@ class TradeStrategy1(TradeStrategyBase):
             TradeStrategy1.s_keep_stock_threshold:
                 ## 若持有股票天數 > 閥值 s_keep_stock_threshold 則賣出
                 self.keep_stock_day = 0 
+                logging.info('sell at {}'.format(trade_day.date))
     
     @property
     def buy_change_threshold(self):
@@ -183,6 +189,7 @@ class TradeStrategy2(TradeStrategyBase):
                 self.keep_stock_day = 0
     @classmethod
     def set_keep_stock_threshold(cls, keep_stock_threshold):
+        """設置持有時間 """
         cls.s_keep_stock_threshold = keep_stock_threshold
     @staticmethod
     def set_buy_change_threshold(buy_change_threshold):
@@ -202,7 +209,7 @@ class TradeLoopBack:
         self.trade_days = trade_days
         self.trade_strategy = trade_strategy 
         ## 交易盈虧序列
-        self.profit_array = []
+        self.profit_array = [] ##相較前一天漲跌率
         
     def execute_trade(self):
         """執行交易回測"""
@@ -210,7 +217,7 @@ class TradeLoopBack:
             """以時間驅動,完成交易回測"""
             if self.trade_strategy.keep_stock_day > 0:
                 ## 如果持有股票,加入交易盈虧結果序列
-                self.profit_array.append(day.change)
+                self.profit_array.append(day.change) 
             #hasattr : 查詢object是否有實現某個方法
             if hasattr(self.trade_strategy, 'buy_strategy'):
                 ## 買入策略
@@ -219,34 +226,67 @@ class TradeLoopBack:
             if hasattr(self.trade_strategy, 'sell_strategy'):
                 ## 賣出策略
                 self.trade_strategy.sell_strategy(ind, day,
-                                                 self.trade_days)    
+                                                 self.trade_days)                
+
+def calc(keep_stock_threshold, buy_change_threshold):
+    """ 給持股天數,買入閥值=>回測策略2效果
+    params
+    ======    
+    :keep_stock_threshold:  持股天數
+    :buy_change_threshold: 下跌買入閥值
+
+    return
+    ======
+    盈虧狀況, 輸入的持股天數, 輸入的下跌買入閥值
+    """
+    trade_strategy2 = TradeStrategy2()
+    ## 推過class方法來修改持股天數
+    TradeStrategy2.set_keep_stock_threshold(keep_stock_threshold)
+    TradeStrategy2.set_buy_change_threshold(buy_change_threshold)
+    trade_loop_back = TradeLoopBack(trade_days, trade_strategy2)
+    trade_loop_back.execute_trade()
+    if len(trade_loop_back.profit_array) ==0 :
+        profit = 0
+    else:
+        profit = np.array(trade_loop_back.profit_array).cumsum()[-1]
+    return profit, keep_stock_threshold, buy_change_threshold
+
 
 if __name__ == '__main__':
+    logging.basicConfig(filename='tradelog_2330.log',level=logging.DEBUG)
 
-    price_lst = ['23.2','22.1','24.5','27.3','25.6']
-    date_lst = ['20170103','20170104','20170105','20170106','20170107']
-    trade_days = StockTradeDays(price_lst,start_date = None,date_array = date_lst)
+    ## 假資料
+    # price_lst = ['23.2', '22.1', '24.5', '27.3', '25.6']
+    # date_lst = ['20170103', '20170104', '20170105', '20170106', '20170107']
+    ## 台股資料##
+    with open('../pw.txt', 'r') as f:
+        pw = f.read()
+    con = pypyodbc.connect(
+        "DRIVER={server};SERVER=dbm_public;UID=sa;PWD={pw};DATABASE=external".
+        format(server='sql server', pw=pw))
+    ## 測試2330-- ##
+    stock2330_df = pd.read_sql("""
+        select * from dbo.twstock_daily_price
+        where  證券代號='2330' 
+            and yyyymmdd > '20040211'
+        order by yyyymmdd""", con)    
+    price_series = stock2330_df['收盤價']
+    date_series = stock2330_df['yyyymmdd'].astype('str')
+    trade_days = StockTradeDays(price_series, start_date=None, date_array=date_series)
+
+    # trade_days = StockTradeDays(price_lst,start_date = None,date_array = date_lst)
     strategy1 = TradeStrategy1()
-    # price_float_lst = [float(e) for e in price_lst]
-    # price_zip_float_lst = list(zip(price_float_lst[1:],price_float_lst[:-1]))
-    # price_updown_perc_lst = [
-    #         round((e1-e2)/e1,4) for e1,e2 in price_zip_float_lst
-    #     ]
-    # # print(price_updown_perc_lst)
-    # price_updown_perc_lst.insert(0,0)
+    strategy2 = TradeStrategy2()
+    # loopback2330 = TradeLoopBack(trade_days,strategy1)
+    # loopback2330.execute_trade()
+    
+    keep_stock_lst = range(2,30,2)
+    print('持股天數--參數組:{}'.format(keep_stock_lst))
+    buy_change_lst = [e/100 for e in range(-5,-16,-1)]
+    print('下跌閥值--參數組:{}'.format(buy_change_lst))
 
-    # stock_namedtuple = namedtuple('stock',['date','price','updown_perc'])
-    # print(stock_namedtuple)
-    # stock_namedtuple_lst = [
-    #         stock_namedtuple(date,price,price_updown_perc) for \
-    #         date, price, price_updown_perc 
-    #         in zip(date_lst, price_float_lst, price_updown_perc_lst)
-    #     ]
-    # # print(stock_namedtuple_lst)
-    # stock_dict = OrderedDict(
-    #     (date, stock_namedtuple(date, price, change))
-    #     for date, price, change in  
-    #     zip(date_lst, price_float_lst, price_updown_perc_lst)        
-    # )
-
-
+    result = []
+    for keep_stock_th, buy_change_th in itertools.product(keep_stock_lst, buy_change_lst):
+        result.append(calc(keep_stock_th, buy_change_th))
+    print('共測試:{}組'.format(len(result)))
+    print(sorted(result)[::-1][:10])
