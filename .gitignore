@@ -2,3 +2,5 @@
 .vscode
 *.pickle
 pw.txt
+*.db
+*.rar
