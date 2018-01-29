@@ -7,6 +7,7 @@ import datetime
 import sqlite3
 import logging
 import requests
+import re
 from io import StringIO
 from tqdm import tqdm
 
@@ -37,7 +38,7 @@ def create_db(tablename, con, drop=False):
     logging.info('CREATE TABLE {} SUCCESSED!!'.format(tablename))
 
 
-def crawlPrice(date):
+def get_tse_data(date):
     """上市公司每日股價 
     params
     ======
@@ -70,7 +71,7 @@ def crawlPrice(date):
     return df
 
 
-def crawlBeforeToday(n_days):
+def get_tse_ndays_data(n_days):
     """抓距離今天n_days資料
     """
     data = {}  # 股價資料
@@ -89,9 +90,9 @@ def crawlBeforeToday(n_days):
         international_time_str = str(time.year) + month_str + day_str
 
         print('parsing', international_time_str)
-        # 使用 crawPrice 爬資料
+        # 使用 get_tse_data 爬資料
         try:
-            data[international_time_str] = crawlPrice(taiwan_time_str)
+            data[international_time_str] = get_tse_data(taiwan_time_str)
             print('success!')
         except:
             # 假日爬不到
@@ -115,6 +116,70 @@ def crawlBeforeToday(n_days):
                                '成交筆數', '開盤價', '最高價', '最低價', '收盤價', '本益比']]
     tw_stock_df['yyyymmdd'] = tw_stock_df['yyyymmdd'].astype('str')
     return tw_stock_df
+
+
+def get_otc_data(date_tuple):
+    ## stolen from https://github.com/Asoul/tsec/blob/master/crawl.py#L76
+
+    date_str = '{0}/{1:02d}/{2:02d}'.format(
+        date_tuple[0] - 1911, date_tuple[1], date_tuple[2])
+    yyyymmdd = str(date_tuple[0]) + date_str[4:6] + date_str[-2:]
+    
+    ttime = str(int(time.time() * 100))
+    url = 'http://www.tpex.org.tw/web/stock/aftertrading/daily_close_quotes/stk_quote_result.php?l=zh-tw&d={}&_={}'.format(
+        date_str, ttime)
+    page = requests.get(url)
+
+    if not page.ok:
+        logging.error("Can not get OTC data at {}".format(date_str))
+        return
+
+    result = page.json()
+
+    if result['reportDate'] != date_str:
+        logging.error("Get error date OTC data at {}".format(date_str))
+        return
+    
+    columns = ['證券代號','yyyymmdd','成交量','成交筆數','成交金額','開盤價','最高價','最低價','收盤價']
+    for table in [result['mmData'], result['aaData']]:        
+        for tr in table:
+            if len(tr) == 17:
+                row = clean_row([
+                    yyyymmdd,
+                    tr[8],  # 成交股數 -- 成交量
+                    tr[10],  # 成交筆數
+                    tr[9],  # 成交金額
+                    # tr[3],  # 漲跌價差                
+                    # tr[-4]  # 發行股數
+                    tr[4],  # 開盤價
+                    tr[5],  # 最高價
+                    tr[6],  # 最低價
+                    tr[2]  # 收盤價
+                ])
+                row.insert(0,tr[0])
+
+        # df_row = pd.DataFrame({
+        #     '證券代號': row[0],
+        #     'yyyymmdd': row[1],
+        #     '成交量'  : float(row[2])/1000,
+        #     '成交筆數': int(row[3]),
+        #     '成交金額': int(row[4]),
+        #     '開盤價'  : float(row[5]),
+        #     '最高價' : float(row[6]),
+        #     '最低價' : float(row[7]),
+        #     '收盤價' : float(row[8])
+        # })
+        
+
+
+def clean_row(row):
+    ''' Clean comma and spaces '''
+    for index, content in enumerate(row):
+        row[index] = re.sub(",", "", content.strip())
+    return row
+
+
+
 
 
 def insertDataFrameToDb(df, con, tablename):
@@ -163,4 +228,4 @@ if __name__ == '__main__':
 
     # df = crawlPrice('107/01/03')
     # logging.info(df)
-    df = crawlBeforeToday(5) # 
+    df = get_tse_ndays_data(5) # 
