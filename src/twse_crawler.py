@@ -3,7 +3,7 @@
 import pandas as pd
 import numpy as np
 import asyncio
-import datetime
+import datetime,time
 import sqlite3
 import logging
 import requests
@@ -18,21 +18,36 @@ def create_db(tablename, con, drop=False):
         SQL_DROP = """DROP TABLE IF EXISTS {} """.format(tablename)
         cursor.execute(SQL_DROP)
         logging.info('DROP TABLE {} SUCCESSED!!'.format(tablename))
-
-    SQL_CREATE = """
-        CREATE TABLE {}(
-            yyyymmdd date,
-            證券代號 TEXT,
-            成交量 REAL,
-            成交筆數 INTEGER, 
-            開盤價 REAL, 
-            最高價 REAL, 
-            最低價 REAL, 
-            收盤價 REAL, 
-            本益比 REAL,
-            PRIMARY KEY (yyyymmdd,證券代號)
-        )
-    """.format(tablename)
+    if tablename == 'tse_price':
+        SQL_CREATE = """
+            CREATE TABLE {}(
+                yyyymmdd date,
+                證券代號 TEXT,
+                成交量 REAL,
+                成交筆數 INTEGER, 
+                開盤價 REAL, 
+                最高價 REAL, 
+                最低價 REAL, 
+                收盤價 REAL, 
+                本益比 REAL,
+                PRIMARY KEY (yyyymmdd,證券代號)
+            )
+        """.format(tablename)
+    elif tablename =='otc_price':
+        SQL_CREATE = """
+            CREATE TABLE {}(
+                yyyymmdd date,
+                證券代號 TEXT,
+                成交量 REAL,
+                成交筆數 INTEGER,
+                成交金額 INTEGER,
+                開盤價 REAL,
+                最高價 REAL,
+                最低價 REAL,
+                收盤價 REAL,
+                PRIMARY KEY (yyyymmdd,證券代號)
+            )
+        """.format(tablename)
     cursor.execute(SQL_CREATE)
     con.commit()
     logging.info('CREATE TABLE {} SUCCESSED!!'.format(tablename))
@@ -120,6 +135,17 @@ def get_tse_ndays_data(n_days):
 
 def get_otc_data(date_tuple):
     ## stolen from https://github.com/Asoul/tsec/blob/master/crawl.py#L76
+    """下載上櫃股價資料
+    params
+    ======
+    data_tuple : (tuple)
+        (2018,1,29)
+    
+    return
+    ======
+    當日otc股價 dataframe
+    """
+    
 
     date_str = '{0}/{1:02d}/{2:02d}'.format(
         date_tuple[0] - 1911, date_tuple[1], date_tuple[2])
@@ -140,7 +166,17 @@ def get_otc_data(date_tuple):
         logging.error("Get error date OTC data at {}".format(date_str))
         return
     
-    columns = ['證券代號','yyyymmdd','成交量','成交筆數','成交金額','開盤價','最高價','最低價','收盤價']
+    
+    stock_ids = []
+    yyyymmdd_dates = []
+    volumns_amount = []
+    deal_amount = []
+    turnover = []
+    open_price = []
+    close_price = []
+    highest_price = []
+    lowest_price = []
+
     for table in [result['mmData'], result['aaData']]:        
         for tr in table:
             if len(tr) == 17:
@@ -157,25 +193,48 @@ def get_otc_data(date_tuple):
                     tr[2]  # 收盤價
                 ])
                 row.insert(0,tr[0])
-
-        # df_row = pd.DataFrame({
-        #     '證券代號': row[0],
-        #     'yyyymmdd': row[1],
-        #     '成交量'  : float(row[2])/1000,
-        #     '成交筆數': int(row[3]),
-        #     '成交金額': int(row[4]),
-        #     '開盤價'  : float(row[5]),
-        #     '最高價' : float(row[6]),
-        #     '最低價' : float(row[7]),
-        #     '收盤價' : float(row[8])
-        # })
+                stock_ids.append(row[0])
+                yyyymmdd_dates.append(row[1])
+                volumns_amount.append(float(row[2])/1000)
+                deal_amount.append(int(row[3]))
+                turnover.append(int(row[4]))
+                open_price.append(float(row[5]))
+                close_price.append(float(row[6]))
+                highest_price.append(float(row[7]))
+                lowest_price.append(float(row[8]))
+    otc_price_df = pd.DataFrame({
+        '證券代號' : stock_ids,
+        'yyyymmdd' : yyyymmdd_dates,
+        '成交量' : volumns_amount,
+        '成交筆數' : deal_amount,
+        '成交金額': turnover,
+        '開盤價' : open_price,
+        '最高價':highest_price,
+        '最低價':lowest_price,
+        '收盤價':close_price
+    })
+    return otc_price_df                
         
-
+def get_otc_ndays_data(n_days):
+    assert (n_days > 0) and isinstance(n_days,int),'n_days must be positive int'
+    today = datetime.datetime.today()
+    otc_ndays_price = pd.DataFrame()
+    count = 0
+    while (count < n_days):
+        parse_day = today
+        count+=1
+        date_tuple = (parse_day.year, parse_day.month, parse_day.day)
+        otc_price_df = get_otc_data(date_tuple)
+        otc_ndays_price = otc_ndays_price.append(otc_price_df)
+        parse_day -= datetime.timedelta(days=1)
+    return otc_ndays_price
 
 def clean_row(row):
     ''' Clean comma and spaces '''
     for index, content in enumerate(row):
         row[index] = re.sub(",", "", content.strip())
+        if '---' in content :
+            row[index] = np.nan
     return row
 
 
@@ -220,12 +279,14 @@ def insertDataFrameToDb(df, con, tablename):
 
 if __name__ == '__main__':
 
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
 
     con = sqlite3.connect('twse.db')
-    create_db('daily_price',con,drop=True)
+    create_db('tse_price',con,drop=True)
+    create_db('otc_price',con,drop=True)
     cursor = con.cursor()
 
     # df = crawlPrice('107/01/03')
     # logging.info(df)
-    df = get_tse_ndays_data(5) # 
+    df_tse = get_tse_ndays_data(5) #
+    df_otc = get_otc_ndays_data(5) # 
